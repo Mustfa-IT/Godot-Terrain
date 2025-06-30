@@ -96,7 +96,17 @@ var p_shader: RID
 var p_wire_shader: RID
 var clear_colors := PackedColorArray([Color.DARK_BLUE])
 
+const terrain_vertex_shader_path = "res://Shaders/terrain_vertex_shader.vert"
+const terrain_fragment_shader_path = "res://Shaders/terrain_fragment_shader.frag"
+const terrain_wire_fragment_shader_path = "res://Shaders/terrain_wire_fragment_shader.frag"
+var source_vertex = ""
+var source_fragment = ""
+var source_wire_fragment = ""
+
 func _init():
+	source_vertex = load_shader_text(terrain_vertex_shader_path)
+	source_fragment = load_shader_text(terrain_fragment_shader_path)
+	source_wire_fragment = load_shader_text(terrain_wire_fragment_shader_path)
 	effect_callback_type = CompositorEffect.EFFECT_CALLBACK_TYPE_POST_TRANSPARENT
 
 	rd = RenderingServer.get_rendering_device()
@@ -400,10 +410,10 @@ func _notification(what):
 			rd.free_rid(p_wire_index_buffer)
 
 
-const source_vertex = ""
-
-
-const source_fragment = ""
-
-# I am not going to explain the wireframe shader it's pretty straight forward okay thanks
-const source_wire_fragment = ""
+func load_shader_text(_file_source: String = "") -> String:
+	# Load the shader source code from the text files, this is a bit of a hack
+	var file := FileAccess.open(_file_source, FileAccess.READ) # Fix file path usage
+	if not file:
+		push_error("Failed to load shader source code: " + _file_source)
+		return ""
+	return file.get_as_text()
