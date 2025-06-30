@@ -1,6 +1,11 @@
 @tool
 class_name DrawTerrainMesh extends CompositorEffect
 
+## Paths for shaders + shared include
+const SHARED_INCLUDE_PATH := "res://Shaders/shared.gdshaderinc"
+const TERRAIN_VERTEX_SHADER_PATH := "res://Shaders/terrain_vertex_shader.vert"
+const TERRAIN_FRAGMENT_SHADER_PATH := "res://Shaders/terrain_fragment_shader.frag"
+const TERRAIN_WIRE_FRAGMENT_SHADER_PATH := "res://Shaders/terrain_wire_fragment_shader.frag"
 
 ## Regenerate mesh data and recompile shaders TODO: Separate mesh generation and shader recompilation
 @export var regenerate: bool = true
@@ -96,17 +101,14 @@ var p_shader: RID
 var p_wire_shader: RID
 var clear_colors := PackedColorArray([Color.DARK_BLUE])
 
-const terrain_vertex_shader_path = "res://Shaders/terrain_vertex_shader.vert"
-const terrain_fragment_shader_path = "res://Shaders/terrain_fragment_shader.frag"
-const terrain_wire_fragment_shader_path = "res://Shaders/terrain_wire_fragment_shader.frag"
-var source_vertex = ""
-var source_fragment = ""
-var source_wire_fragment = ""
+var source_vertex := ""
+var source_fragment := ""
+var source_wire_fragment := ""
 
 func _init():
-	source_vertex = load_shader_text(terrain_vertex_shader_path)
-	source_fragment = load_shader_text(terrain_fragment_shader_path)
-	source_wire_fragment = load_shader_text(terrain_wire_fragment_shader_path)
+	source_vertex = _load_and_inject(TERRAIN_VERTEX_SHADER_PATH)
+	source_fragment = _load_and_inject(TERRAIN_FRAGMENT_SHADER_PATH)
+	source_wire_fragment = _load_and_inject(TERRAIN_WIRE_FRAGMENT_SHADER_PATH)
 	effect_callback_type = CompositorEffect.EFFECT_CALLBACK_TYPE_POST_TRANSPARENT
 
 	rd = RenderingServer.get_rendering_device()
@@ -115,6 +117,28 @@ func _init():
 	var tree := Engine.get_main_loop() as SceneTree
 	var root: Node = tree.edited_scene_root if Engine.is_editor_hint() else tree.current_scene
 	if root: light = root.get_node_or_null('DirectionalLight3D')
+
+# Helper: loads shader text and injects shared include contents if #include directive is found
+func _load_and_inject(path: String) -> String:
+	var file = FileAccess.open(path, FileAccess.READ)
+	if not file:
+		push_error("Failed to load shader: %s" % path)
+		return ""
+	var text = file.get_as_text()
+	# Replace #include directives with the actual content of the included file
+	while text.find("#include") != -1:
+		var start_idx = text.find("#include")
+		var end_idx = text.find("\n", start_idx)
+		var include_line = text.substr(start_idx, end_idx - start_idx).strip_edges()
+		var include_path = include_line.replace("#include", "").strip_edges()
+		include_path = include_path.trim_prefix("\"").trim_suffix("\"")
+		var shared_file = FileAccess.open(include_path, FileAccess.READ)
+		if not shared_file:
+			push_error("Failed to load shared include: %s" % include_path)
+			return text
+		var shared_content = shared_file.get_as_text()
+		text = text.replace(include_line, shared_content)
+	return text
 
 # Compiles... the shader...?
 func compile_shader(vertex_shader: String, fragment_shader: String) -> RID:

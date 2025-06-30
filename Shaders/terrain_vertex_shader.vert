@@ -1,5 +1,5 @@
 #version 450
-
+#include res://Shaders/shared.gdshaderinc
 		// This is the uniform buffer that contains all of the settings we sent over from the cpu in _render_callback. Must match with the one in the fragment shader.
 		layout(set = 0, binding = 0, std140) uniform UniformBufferObject {
 			mat4 MVP;
@@ -37,10 +37,6 @@
 
 		// UE4's PseudoRandom function
 		// https://github.com/EpicGames/UnrealEngine/blob/release/Engine/Shaders/Private/Random.ush
-		float pseudo(vec2 v) {
-			v = fract(v/128.)*128. + vec2(-64.340622, -72.465622);
-			return fract(dot(v.xyx * v.xyy, vec3(20.390625, 60.703125, 2.4281209)));
-		}
 
 		// Takes our xz positions and turns them into a random number between 0 and 1 using the above pseudo random function
 		float HashPosition(vec2 pos) {
