@@ -1,6 +1,5 @@
 #version 450
 #include res://Shaders/shared.gdshaderinc
-
 		// This is the uniform buffer that contains all of the settings we sent over from the cpu in _render_callback. Must match with the one in the vertex shader, they're technically the same thing occupying the same spot in memory this is just duplicate code required for compilation.
 		layout(set = 0, binding = 0, std140) uniform UniformBufferObject {
 			mat4 MVP;
@@ -32,14 +31,6 @@
 
 		// This is what the fragment shader will output, usually just a pixel color
 		layout(location = 0) out vec4 frag_color;
-
-		#define PI 3.141592653589793238462
-
-
-		// Takes our xz positions and turns them into a random number between 0 and 1 using the above pseudo random function
-		float HashPosition(vec2 pos) {
-			return pseudo(pos * vec2(_Seed, _Seed + 4));
-		}
 
 		// Generates a random gradient vector for the perlin noise lattice points, watch my perlin noise video for a more in depth explanation
 		vec2 RandVector(float seed) {
@@ -73,10 +64,10 @@
 			vec2 c11 = latticeMax;
 
 			// Gradient Vectors assigned to each corner
-			vec2 g00 = RandVector(HashPosition(c00));
-			vec2 g10 = RandVector(HashPosition(c10));
-			vec2 g01 = RandVector(HashPosition(c01));
-			vec2 g11 = RandVector(HashPosition(c11));
+			vec2 g00 = RandVector(HashPosition(c00,_Seed));
+			vec2 g10 = RandVector(HashPosition(c10,_Seed));
+			vec2 g01 = RandVector(HashPosition(c01,_Seed));
+			vec2 g11 = RandVector(HashPosition(c11,_Seed));
 
 			// Directions to position from lattice corners
 			vec2 p0 = remainder;
@@ -118,7 +109,7 @@
 						  0.0, 1.0);
 
 			// generate random angle variance if applicable
-			float angle_variance = mix(_AngularVariance.x, _AngularVariance.y, HashPosition(vec2(_Seed, 827)));
+			float angle_variance = mix(_AngularVariance.x, _AngularVariance.y, HashPosition(vec2(_Seed, 827),_Seed));
 			float theta = (_NoiseRotation + angle_variance) * PI / 180.0;
 
 			// rotation matrix
@@ -140,7 +131,7 @@
 				amplitude *= _AmplitudeDecay;
 
 				// generate random angle variance if applicable
-				angle_variance = mix(_AngularVariance.x, _AngularVariance.y, HashPosition(vec2(i * 419, _Seed)));
+				angle_variance = mix(_AngularVariance.x, _AngularVariance.y, HashPosition(vec2(i * 419, _Seed),_Seed));
 				theta = (_NoiseRotation + angle_variance) * PI / 180.0;
 
 				// reconstruct rotation matrix, kind of a performance stink since this is technically expensive and doesn't need to be done if no random angle variance but whatever it's 2025
@@ -150,7 +141,7 @@
 				m2i = inverse(m2);
 
 				// generate frequency variance if applicable
-				float freq_variance = mix(_FrequencyVarianceLowerBound, _FrequencyVarianceUpperBound, HashPosition(vec2(i * 422, _Seed)));
+				float freq_variance = mix(_FrequencyVarianceLowerBound, _FrequencyVarianceUpperBound, HashPosition(vec2(i * 422, _Seed),_Seed));
 
 				// apply frequency adjustment to sample position for next noise layer
 				pos = (lacunarity + freq_variance) * m2 * pos;

@@ -8,9 +8,9 @@ float pseudo(vec2 v) {
 }
 
 // Takes our xz positions and turns them into a random number between 0 and 1
-// float HashPosition(vec2 pos, float seed) {
-// 	return pseudo(pos * vec2(seed, seed + 4.0));
-// }
+float HashPosition(vec2 pos, float seed) {
+	return pseudo(pos * vec2(seed, seed + 4.0));
+}
 
 // // Generates a random gradient vector for the perlin noise lattice points
 // vec2 RandVector(float seed) {
